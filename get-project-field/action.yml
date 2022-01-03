@@ -1,0 +1,48 @@
+name: Get Project Field
+description: Get Project Field
+inputs:
+  organization:
+    description: The organization name
+    required: true
+  project:
+    description: The project number
+    required: true
+  field:
+    description: The project field name
+    required: true
+outputs:
+  field:
+    description: The project field
+    value: ${{ steps.field.outputs.value }}
+runs:
+  using: composite
+  steps:
+    - id: field
+      run: |
+        value=null
+        after=null
+        has_next_page=true
+        while [[ "$value" == null && $has_next_page == true ]]; do
+          result="$(gh api graphql -f query='query($after: String){
+            organization(login: "${{ inputs.organization }}"){
+              projectNext(number: ${{ inputs.project }}) {
+                fields(first: 100, after: $after) {
+                  pageInfo {
+                    hasNextPage
+                    endCursor
+                  }
+                  nodes {
+                    name
+                    id
+                  }
+                }
+              }
+            }
+          }' -F after="$after")"
+          has_next_page=$(jq -r '.data.organization.projectNext.fields.pageInfo.hasNextPage' <<< "$result")
+          after=$(jq -r '.data.organization.projectNext.fields.pageInfo.endCursor' <<< "$result")
+          value="$(jq -r '[.data.organization.projectNext.fields.nodes[] | select(.name == "${{ inputs.field }}")] | .[0]' <<< "$result")"
+        done
+        value="$(jq -c '.' <<< "$value")"
+        echo "::set-output name=value::$value"
+      shell: bash

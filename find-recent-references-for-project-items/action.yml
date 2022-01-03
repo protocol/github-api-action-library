@@ -1,0 +1,89 @@
+name: Find Recent References For Project Items
+description: Find recent references for project items
+inputs:
+  organization:
+    description: The organization name
+    required: true
+  project:
+    description: The project number
+    required: true
+  max:
+    description: The max limit for the number of cross references
+    required: true
+    default: 1
+  since:
+    description: The date when the cross references where last updated
+    required: false
+outputs:
+  items:
+    description: The list of project items
+    value: ${{ steps.items.outputs.value }}
+runs:
+  using: composite
+  steps:
+    - id: items
+      run: |
+        value=''
+        since="$(date --date='${{ inputs.since }}' +%s)"
+        after=null
+        has_next_page=true
+        while $has_next_page; do
+          result="$(gh api graphql -f query='query($after: String) {
+            organization(login: "${{ inputs.organization }}") {
+              projectNext(number: ${{ inputs.project }}) {
+                items(first: 100, after: $after) {
+                  pageInfo {
+                    hasNextPage
+                    endCursor
+                  }
+                  
+                  nodes {
+                    id
+                    content {
+                      ... on Issue {
+                        timelineItems(
+                          last: ${{ inputs.max }},
+                          itemTypes: [CROSS_REFERENCED_EVENT]
+                        ) {
+                          totalCount
+                          updatedAt
+                          nodes {
+                            ... on CrossReferencedEvent {
+                              source {
+                                ... on UniformResourceLocatable {
+                                  url
+                                }
+                                ... on RepositoryNode {
+                                  repository {
+                                    nameWithOwner
+                                  }
+                                }
+                                ... on Issue {
+                                  number
+                                }
+                                ... on PullRequest {
+                                  number
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -F after="$after")"
+          has_next_page=$(jq -r '.data.organization.projectNext.items.pageInfo.hasNextPage' <<< "$result")
+          after=$(jq -r '.data.organization.projectNext.items.pageInfo.endCursor' <<< "$result")
+          for node in $(jq -rc '.data.organization.projectNext.items.nodes[] | select(.content.timelineItems.totalCount > 0)' <<< "$result"); do
+            updated_at="$(date --date="$(jq -rc '.content.timelineItems.updatedAt' <<< "$node")" +%s)"
+            if [[ '${{ inputs.since }}' == '' || "$updated_at" -ge "$since" ]]; then
+              value="$value $node"
+            fi
+          done
+        done
+        value="$(jq -sc '.' <<< "$value")"
+        echo "::set-output name=value::$value"
+      shell: bash

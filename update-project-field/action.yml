@@ -1,0 +1,51 @@
+name: Update Project Field
+description: Update project field
+inputs:
+  project:
+    description: The project ID
+    required: true
+  field:
+    description: The project field ID
+    required: true
+  map:
+    description: The map from project item IDs to project field values
+    required: true
+outputs:
+  updated-item-ids:
+    description: The list of updated project item IDs
+    value: ${{ steps.items.outputs.updated-item-ids }}
+  failed-item-ids:
+    description: The list of project item IDs that failed to be updated
+    value: ${{ steps.items.outputs.failed-item-ids }}
+runs:
+  using: composite
+  steps:
+    - id: items
+      run: |
+        updated_item_ids=''
+        failed_item_ids=''
+        for item_id in $(jq -r 'keys | .[]' <<< '${{ inputs.map }}'); do
+          echo "::group::$item_id"
+          value="$(jq -r ".$item_id" <<< '${{ inputs.map }}')"
+          if gh api graphql -f query='mutation($itemId: ID!, $value: String!) {
+            updateProjectNextItemField(input: {
+              projectId: "${{ inputs.project }}",
+              itemId: $itemId,
+              fieldId: "${{ inputs.field }}",
+              value: $value}) {
+                projectNextItem {
+                  id
+                }
+              }
+            }' -f itemId="$item_id" -f value="$value"; then
+            updated_item_ids="$updated_item_ids \"$item_id\""
+          else
+            failed_item_ids="$failed_item_ids \"$item_id\""
+          fi
+          echo "::endgroup::"
+        done
+        updated_item_ids="$(jq -sc '.' <<< "$updated_item_ids")"
+        failed_item_ids="$(jq -sc '.' <<< "$failed_item_ids")"
+        echo "::set-output name=updated-item-ids::$updated_item_ids"
+        echo "::set-output name=failed-item-ids::$failed_item_ids"
+      shell: bash

@@ -1,0 +1,26 @@
+name: Get Repository
+description: Get repository
+inputs:
+  organization:
+    description: The organization name
+    required: true
+  repository:
+    description: The repository name
+    required: true
+outputs:
+  repository:
+    description: The repository
+    value: ${{ steps.repository.outputs.value }}
+runs:
+  using: composite
+  steps:
+    - id: repository
+      run: |
+        value="$(gh api graphql -f query='{
+          repository(owner: "${{ inputs.organization }}", name: "${{ inputs.repository }}") {
+            id
+          }
+        }' --jq '.data.repository')"
+        value="$(jq -c '.' <<< "$value")"
+        echo "::set-output name=value::$value"
+      shell: bash

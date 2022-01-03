@@ -1,0 +1,47 @@
+name: Find Content By Query
+description: Find content by query
+inputs:
+  query:
+    description: The content(issue or pull request) query
+    required: true
+outputs:
+  issues-or-pull-requests:
+    description: The list of content(issues or pull requests)
+    value: ${{ steps.issues-or-pull-requests.outputs.value }}
+runs:
+  using: composite
+  steps:
+    - id: issues-or-pull-requests
+      run: |
+        value=''
+        after=null
+        has_next_page=true
+        while $has_next_page; do
+          result="$(gh api graphql -f query='query($after: String) {
+            search(
+              query: "${{ inputs.query }}",
+              first: 100,
+              type: ISSUE,
+              after: $after
+            ) {
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+              nodes {
+                ... on Node {
+                  id
+                }
+                ... on UniformResourceLocatable {
+                  url
+                }
+              }
+            }
+          }' -F after="$after")"
+          has_next_page=$(jq -r '.data.search.pageInfo.hasNextPage' <<< "$result")
+          after=$(jq -r '.data.search.pageInfo.endCursor' <<< "$result")
+          value="$value $(jq '.data.search.nodes[]' <<< "$result")"
+        done
+        value="$(jq -sc '.' <<< "$value")"
+        echo "::set-output name=value::$value"
+      shell: bash

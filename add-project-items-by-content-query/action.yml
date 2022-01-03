@@ -1,0 +1,39 @@
+name: Add Project Items By Content Query
+description: Add project items by content query
+inputs:
+  organization:
+    description: The organization name
+    required: true
+  project:
+    description: The project name or number
+    required: true
+  query:
+    description: The content(issue or pull request) query
+    required: true
+outputs:
+  added-item-ids:
+    description: The list of added project item IDs
+    value: ${{ steps.items.outputs.added-item-ids }}
+  failed-content-ids:
+    description: The list of content IDs that failed to be added
+    value: ${{ steps.items.outputs.failed-content-ids }}
+  issues-or-pull-requests:
+    description: The list of content(issues or pull requests)
+    value: ${{ steps.issues-or-pull-requests.outputs.issues-or-pull-requests }}
+runs:
+  using: composite
+  steps:
+    - id: project
+      uses: galargh/github-api-action-library/get-project@master
+      with:
+        organization: ${{ inputs.organization }}
+        project: ${{ inputs.project }}
+    - id: issues-or-pull-requests
+      uses: galargh/github-api-action-library/find-content-by-query@master
+      with:
+        query: ${{ inputs.query }}
+    - id: items
+      uses: galargh/github-api-action-library/add-project-items-by-content-id@master
+      with:
+        project: ${{ fromJson(steps.project.outputs.project).id }}
+        content-ids: ${{ toJson(fromJson(steps.issues-or-pull-requests.outputs.issues-or-pull-requests).*.id) }}

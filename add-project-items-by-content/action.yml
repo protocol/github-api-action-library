@@ -1,0 +1,48 @@
+name: Add Project Items By Content
+description: Add project items by content
+inputs:
+  organization:
+    description: The organization name
+    required: true
+  project:
+    description: The project name or number
+    required: true
+  repository:
+    description: The repository name
+    required: true
+  content:
+    description: The list of content objects
+    required: true
+outputs:
+  added-item-ids:
+    description: The list of added project item IDs
+    value: ${{ steps.items.outputs.added-item-ids }}
+  failed-content-ids:
+    description: The list of content IDs that failed to be added
+    value: ${{ steps.items.outputs.failed-content-ids }}
+  issues:
+    description: The list of issues
+    value: ${{ steps.issues.outputs.issues }}
+runs:
+  using: composite
+  steps:
+    - id: project
+      uses: galargh/github-api-action-library/get-project@master
+      with:
+        organization: ${{ inputs.organization }}
+        project: ${{ inputs.project }}
+    - id: repository
+      uses: galargh/github-api-action-library/get-repository@master
+      with:
+        organization: ${{ inputs.organization }}
+        repository: ${{ inputs.repository }}
+    - id: issues
+      uses: galargh/github-api-action-library/add-issues-by-content@master
+      with:
+        repository: ${{ fromJson(steps.repository.outputs.repository).id }}
+        content: ${{ inputs.content }}
+    - id: items
+      uses: galargh/github-api-action-library/add-project-items-by-content-id@master
+      with:
+        project: ${{ fromJson(steps.project.outputs.project).id }}
+        content-ids: ${{ toJson(fromJson(steps.issues.outputs.issues).*.id) }}

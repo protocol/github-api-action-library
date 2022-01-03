@@ -1,0 +1,43 @@
+name: Get Project
+description: Get project
+inputs:
+  organization:
+    description: The organization name
+    required: true
+  project:
+    description: The project name or number
+    required: true
+outputs:
+  project:
+    description: The project
+    value: ${{ steps.project.outputs.value }}
+runs:
+  using: composite
+  steps:
+    - id: project
+      run: |
+        value=null
+        if [[ '${{ inputs.project }}' =~ ^[0-9]+$ ]]; then
+          value="$(gh api graphql -f query='{
+            organization(login: "${{ inputs.organization }}") {
+              projectNext(number: ${{ inputs.project }}) {
+                id
+                number
+              }
+            }
+          }' --jq '.data.organization.projectNext')"
+        else
+          value="$(gh api graphql -f query='{
+            organization(login: "${{ inputs.organization }}") {
+              projectsNext(first: 1, query: "${{ inputs.project }}") {
+                nodes {
+                  id
+                  number
+                }
+              }
+            }
+          }' --jq '.data.organization.projectsNext.nodes[0]')"
+        fi
+        value="$(jq -c '.' <<< "$value")"
+        echo "::set-output name=value::$value"
+      shell: bash
