@@ -27,22 +27,22 @@ runs:
   using: composite
   steps:
     - id: project
-      uses: galargh/github-api-action-library/get-project@master
+      uses: protocol/github-api-action-library/get-project@master
       with:
         organization: ${{ inputs.organization }}
         project: ${{ inputs.project }}
     - id: repository
-      uses: galargh/github-api-action-library/get-repository@master
+      uses: protocol/github-api-action-library/get-repository@master
       with:
         organization: ${{ inputs.organization }}
         repository: ${{ inputs.repository }}
     - id: issues
-      uses: galargh/github-api-action-library/add-issues-by-content@master
+      uses: protocol/github-api-action-library/add-issues-by-content@master
       with:
         repository: ${{ fromJson(steps.repository.outputs.repository).id }}
         content: ${{ inputs.content }}
     - id: items
-      uses: galargh/github-api-action-library/add-project-items-by-content-id@master
+      uses: protocol/github-api-action-library/add-project-items-by-content-id@master
       with:
         project: ${{ fromJson(steps.project.outputs.project).id }}
         content-ids: ${{ toJson(fromJson(steps.issues.outputs.issues).*.id) }}
