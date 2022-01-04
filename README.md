@@ -47,7 +47,7 @@ jobs:
           echo "::set-output name=value::${{ matrix.query }} created:>=$(date --date='${{ env.SINCE }}' +"%Y-%m-%d")"
         shell: bash
       - id: items
-        uses: protocol/github-api-action-library/add-project-items-by-content-query@master
+        uses: protocol/github-api-action-library/add-project-items-by-content-query@v1.0.0
         with:
           organization: ${{ env.ORGANIZATION }}
           project: ${{ env.PROJECT }}
@@ -61,7 +61,7 @@ jobs:
           echo "::set-output name=value::[{\"title\":\"$title\",\"body\":\"$body\"}]"
         shell: bash
       - if: ${{ steps.items.outputs.failed-content-ids != '[]' }}
-        uses: protocol/github-api-action-library/add-project-items-by-content@master
+        uses: protocol/github-api-action-library/add-project-items-by-content@v1.0.0
         with:
           organization: ${{ env.ORGANIZATION }}
           project: ${{ env.PROJECT }}
@@ -90,7 +90,7 @@ jobs:
       SINCE: -7days
     steps:
       - id: items
-        uses: protocol/github-api-action-library/update-project-field-with-recent-references@master
+        uses: protocol/github-api-action-library/update-project-field-with-recent-references@v1.0.0
         with:
           organization: ${{ env.ORGANIZATION }}
           project: ${{ env.PROJECT }}
