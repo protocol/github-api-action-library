@@ -29,8 +29,19 @@ runs:
                 endCursor
               }
               nodes {
+                ... on Issue {
+                  number
+                }
                 ... on Node {
                   id
+                }
+                ... on PullRequest {
+                  number
+                }
+                ... on RepositoryNode {
+                  repository {
+                    nameWithOwner
+                  }
                 }
                 ... on UniformResourceLocatable {
                   url
