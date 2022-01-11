@@ -28,18 +28,18 @@ runs:
   using: composite
   steps:
     - id: project
-      uses: protocol/github-api-action-library/get-project@v1.0.0
+      uses: protocol/github-api-action-library/get-project@v1.1.0
       with:
         organization: ${{ inputs.organization }}
         project: ${{ inputs.project }}
     - id: field
-      uses: protocol/github-api-action-library/get-project-field@v1.0.0
+      uses: protocol/github-api-action-library/get-project-field@v1.1.0
       with:
         organization: ${{ inputs.organization }}
         project: ${{ fromJson(steps.project.outputs.project).number }}
         field: ${{ inputs.field }}
     - id: items
-      uses: protocol/github-api-action-library/find-recent-references-for-project-items@v1.0.0
+      uses: protocol/github-api-action-library/find-recent-references-for-project-items@v1.1.0
       with:
         organization: ${{ inputs.organization }}
         project: ${{ fromJson(steps.project.outputs.project).number }}
@@ -73,7 +73,7 @@ runs:
         echo "::set-output name=map::$map"
       shell: bash
     - id: updated-items
-      uses: protocol/github-api-action-library/update-project-field@v1.0.0
+      uses: protocol/github-api-action-library/update-project-field@v1.1.0
       with:
         project: ${{ fromJson(steps.project.outputs.project).id }}
         field: ${{ fromJson(steps.field.outputs.field).id }}
