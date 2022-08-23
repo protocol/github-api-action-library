@@ -15,12 +15,15 @@ runs:
   using: composite
   steps:
     - id: repository
+      env:
+        ORGANIZATION: ${{ inputs.organization }}
+        REPOSITORY: ${{ inputs.repository }}
       run: |
         value="$(gh api graphql -f query='{
-          repository(owner: "${{ inputs.organization }}", name: "${{ inputs.repository }}") {
+          repository(owner: "'"${ORGANIZATION}"'", name: "'"${REPOSITORY}"'") {
             id
           }
         }' --jq '.data.repository')"
-        value="$(jq -c '.' <<< "$value")"
-        echo "::set-output name=value::$value"
+        value="$(jq -c '.' <<< "${value}")"
+        echo "::set-output name=value::${value}"
       shell: bash

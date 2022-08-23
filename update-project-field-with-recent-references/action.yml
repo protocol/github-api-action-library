@@ -46,31 +46,33 @@ runs:
         max: ${{ inputs.max }}
         since: ${{ inputs.since }}
     - id: map
+      env:
+        ITEMS: ${{ steps.items.outputs.items }}
       run: |
         template='<a href="\(.source.url)" data-hovercard-url="\(.source.url)/hovercard" style="display: block">\(.source.repository.nameWithOwner)#\(.source.number | tostring)</a>'
         ellipsis='<div>…</div>'
         map=''
         while read item; do
-          id="$(jq -r '.id' <<< "$item")"
+          id="$(jq -r '.id' <<< "${item}")"
           count=0
-          total_count="$(jq -r '.content.timelineItems.totalCount' <<< "$item")"
+          total_count="$(jq -r '.content.timelineItems.totalCount' <<< "${item}")"
           value=''
           while read timeline_item; do
-            new_value="$value$timeline_item"
+            new_value="${value}${timeline_item}"
             if (( ${#new_value} <= 1024 - ${#ellipsis} )); then
-              value="$new_value"
+              value="${new_value}"
               ((count=count+1))
             else
               break
             fi
-          done <<< "$(jq -rc ".content.timelineItems.nodes | reverse | .[] | \"${template//\"/\\\"}\"" <<< "$item")"
+          done <<< "$(jq -rc ".content.timelineItems.nodes | reverse | .[] | \"${template//\"/\\\"}\"" <<< "${item}")"
           if (( count != total_count )); then
-            value="$value $ellipsis"
+            value="${value} ${ellipsis}"
           fi
-          map="$map {\"$id\":\"${value//\"/\\\"}\"}"
-        done <<< "$(jq -c '.[]' <<< '${{ steps.items.outputs.items }}')"
-        map="$(jq -sc 'add' <<< "$map")"
-        echo "::set-output name=map::$map"
+          map="${map} {\"${id}\":\"${value//\"/\\\"}\"}"
+        done <<< "$(jq -c '.[]' <<< "${ITEMS}")"
+        map="$(jq -sc 'add' <<< "${map}")"
+        echo "::set-output name=map::${map}"
       shell: bash
     - id: updated-items
       uses: protocol/github-api-action-library/update-project-field@v1.1.0

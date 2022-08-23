@@ -12,6 +12,8 @@ runs:
   using: composite
   steps:
     - id: issues-or-pull-requests
+      env:
+        QUERY: ${{ inputs.query }}
       run: |
         value=''
         after=null
@@ -19,7 +21,7 @@ runs:
         while $has_next_page; do
           result="$(gh api graphql -f query='query($after: String) {
             search(
-              query: "${{ inputs.query }}",
+              query: "'"${QUERY}"'",
               first: 100,
               type: ISSUE,
               after: $after
@@ -48,11 +50,11 @@ runs:
                 }
               }
             }
-          }' -F after="$after")"
-          has_next_page=$(jq -r '.data.search.pageInfo.hasNextPage' <<< "$result")
-          after=$(jq -r '.data.search.pageInfo.endCursor' <<< "$result")
-          value="$value $(jq '.data.search.nodes[]' <<< "$result")"
+          }' -F after="${after}")"
+          has_next_page=$(jq -r '.data.search.pageInfo.hasNextPage' <<< "${result}")
+          after=$(jq -r '.data.search.pageInfo.endCursor' <<< "${result}")
+          value="${value} $(jq '.data.search.nodes[]' <<< "${result}")"
         done
-        value="$(jq -sc '.' <<< "$value")"
-        echo "::set-output name=value::$value"
+        value="$(jq -sc '.' <<< "${value}")"
+        echo "::set-output name=value::${value}"
       shell: bash

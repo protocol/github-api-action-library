@@ -18,29 +18,32 @@ runs:
   using: composite
   steps:
     - id: items
+      env:
+        CONTENT_IDS: ${{ inputs.content-ids }}
+        PROJECT_ID: ${{ inputs.project }}
       run: |
         added_item_ids=''
         failed_content_ids=''
-        for content_id in $(jq -r '.[]' <<< '${{ inputs.content-ids }}'); do
-          echo "::group::$content_id"
+        for content_id in $(jq -r '.[]' <<< "${CONTENT_IDS}"); do
+          echo "::group::${content_id}"
           if item_id="$(gh api graphql -f query='mutation($contentId: ID!) {
             addProjectNextItem(input: {
-              projectId: "${{ inputs.project }}",
+              projectId: "${PROJECT_ID}",
               contentId: $contentId
             }) {
               projectNextItem{
                 id
               }
             }
-          }' -f contentId="$content_id" --jq '.data.addProjectNextItem.id')"; then
-            added_item_ids="$added_item_ids $item_id"
+          }' -f contentId="${content_id}" --jq '.data.addProjectNextItem.id')"; then
+            added_item_ids="${added_item_ids} ${item_id}"
           else
-            failed_content_ids="$failed_content_ids \"$content_id\""
+            failed_content_ids="${failed_content_ids} \"${content_id}\""
           fi
           echo "::endgroup::"
         done
-        added_item_ids="$(jq -sc '.' <<< "$added_item_ids")"
-        failed_content_ids="$(jq -sc '.' <<< "$failed_content_ids")"
-        echo "::set-output name=added-item-ids::$added_item_ids"
-        echo "::set-output name=failed-content-ids::$failed_content_ids"
+        added_item_ids="$(jq -sc '.' <<< "${added_item_ids}")"
+        failed_content_ids="$(jq -sc '.' <<< "${failed_content_ids}")"
+        echo "::set-output name=added-item-ids::${added_item_ids}"
+        echo "::set-output name=failed-content-ids::${failed_content_ids}"
       shell: bash

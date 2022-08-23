@@ -43,8 +43,10 @@ jobs:
       SINCE: -7days
     steps:
       - id: query
+        env:
+          QUERY: ${{ matrix.query }}
         run: |
-          echo "::set-output name=value::${{ matrix.query }} created:>=$(date --date='${{ env.SINCE }}' +"%Y-%m-%d")"
+          echo "::set-output name=value::${QUERY} created:>=$(date --date="${SINCE}" +"%Y-%m-%d")"
         shell: bash
       - id: items
         uses: protocol/github-api-action-library/add-project-items-by-content-query@v1.1.0
@@ -54,11 +56,14 @@ jobs:
           query: ${{ steps.query.outputs.value }}
       - id: content
         if: ${{ steps.items.outputs.failed-content-ids != '[]' }}
+        env:
+          FAILED_CONTENT_IDS: ${{ steps.items.outputs.failed-content-ids }}
+          ISSUES_OR_PULL_REUQESTS: ${{ steps.items.outputs.issues-or-pull-requests }}
         run: |
           title='Add project items manually'
-          body=$'```\n'"$(jq -r "[.[] | {\"\\(.id)\":.url}] | add | $(jq -r '[.[] | ".\"\(.)\""] | join(",")' <<< '${{ steps.items.outputs.failed-content-ids }}')" <<< '${{ steps.items.outputs.issues-or-pull-requests }}')"$'\n```'
+          body=$'```\n'"$(jq -r "[.[] | {\"\\(.id)\":.url}] | add | $(jq -r '[.[] | ".\"\(.)\""] | join(",")' <<< "${FAILED_CONTENT_IDS}")" <<< "${ISSUES_OR_PULL_REQUESTS}")"$'\n```'
           body="${body//$'\n'/\\\\n}"
-          echo "::set-output name=value::[{\"title\":\"$title\",\"body\":\"$body\"}]"
+          echo "::set-output name=value::[{\"title\":\"${title}\",\"body\":\"${body}\"}]"
         shell: bash
       - if: ${{ steps.items.outputs.failed-content-ids != '[]' }}
         uses: protocol/github-api-action-library/add-project-items-by-content@v1.1.0
@@ -98,8 +103,10 @@ jobs:
           max: ${{ env.MAX }}
           since: ${{ env.SINCE }}
       - if: ${{ steps.items.outputs.failed-item-ids != '[]' }}
+        env:
+          FAILED_ITEM_IDS: ${{ steps.items.outputs.failed-item-ids }}
         run: |
-          echo "${{ steps.items.outputs.failed-item-ids }}"
+          echo "${FAILED_ITEM_IDS}"
           exit 1
 
 ```

@@ -13,15 +13,15 @@ jobs:
       - run: |
           source .github/scripts/changelog.sh
           git fetch origin --tags
-          if [[ -z "$(git tag -l "v$version")" ]]; then
-            git tag "v$major.$minor.$patch"
-            git tag "v$major.$minor" --force
-            git tag "v$major" --force
+          if [[ -z "$(git tag -l "v${version}")" ]]; then
+            git tag "v${major}.${minor}.${patch}"
+            git tag "v${major}.${minor}" --force
+            git tag "v${major}" --force
             git push --tags --force
             echo "BODY<<EOF" >> $GITHUB_ENV
             echo "$(IFS=$'\n'; echo "${log[*]}")" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
-            echo "TAG=v$version" >> $GITHUB_ENV
+            echo "TAG=v${version}" >> $GITHUB_ENV
           fi
         shell: bash
       - if: ${{ env.TAG != '' }}
