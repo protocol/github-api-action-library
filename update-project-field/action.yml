@@ -21,31 +21,35 @@ runs:
   using: composite
   steps:
     - id: items
+      env:
+        MAP: ${{ inputs.map }}
+        PROJECT: ${{ inputs.project }}
+        FIELD: ${{ inputs.field }}
       run: |
         updated_item_ids=''
         failed_item_ids=''
-        for item_id in $(jq -r 'keys | .[]' <<< '${{ inputs.map }}'); do
-          echo "::group::$item_id"
-          value="$(jq -r ".$item_id" <<< '${{ inputs.map }}')"
+        for item_id in $(jq -r 'keys | .[]' <<< "${MAP}"); do
+          echo "::group::${item_id}"
+          value="$(jq -r ".${item_id}" <<< "${MAP}")"
           if gh api graphql -f query='mutation($itemId: ID!, $value: String!) {
             updateProjectNextItemField(input: {
-              projectId: "${{ inputs.project }}",
+              projectId: "'"${PROJECT}"'",
               itemId: $itemId,
-              fieldId: "${{ inputs.field }}",
+              fieldId: "'"${FIELD}"'",
               value: $value}) {
                 projectNextItem {
                   id
                 }
               }
-            }' -f itemId="$item_id" -f value="$value"; then
-            updated_item_ids="$updated_item_ids \"$item_id\""
+            }' -f itemId="${item_id}" -f value="${value}"; then
+            updated_item_ids="${updated_item_ids} \"${item_id}\""
           else
-            failed_item_ids="$failed_item_ids \"$item_id\""
+            failed_item_ids="${failed_item_ids} \"${item_id}\""
           fi
           echo "::endgroup::"
         done
-        updated_item_ids="$(jq -sc '.' <<< "$updated_item_ids")"
-        failed_item_ids="$(jq -sc '.' <<< "$failed_item_ids")"
-        echo "::set-output name=updated-item-ids::$updated_item_ids"
-        echo "::set-output name=failed-item-ids::$failed_item_ids"
+        updated_item_ids="$(jq -sc '.' <<< "${updated_item_ids}")"
+        failed_item_ids="$(jq -sc '.' <<< "${failed_item_ids}")"
+        echo "::set-output name=updated-item-ids::${updated_item_ids}"
+        echo "::set-output name=failed-item-ids::${failed_item_ids}"
       shell: bash

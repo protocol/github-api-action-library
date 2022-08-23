@@ -15,12 +15,15 @@ runs:
   using: composite
   steps:
     - id: issues
+      env:
+        REPOSITORY: ${{ inputs.repository }}
+        CONTENT: ${{ inputs.content }}
       run: |
         value=''
         while read content; do
-          title="$(jq -r '.title' <<< "$content")"
-          echo "::group::$title"
-          body="$(jq -r '.body' <<< "$content")"
+          title="$(jq -r '.title' <<< "${content}")"
+          echo "::group::${title}"
+          body="$(jq -r '.body' <<< "${content}")"
           issue="$(gh api graphql -f query='mutation($repositoryId: ID!, $title: String!, $body: String!) {
             createIssue(input: {
               repositoryId: $repositoryId,
@@ -31,10 +34,10 @@ runs:
                 id
               }
             }
-          }' -f repositoryId='${{ inputs.repository }}' -f title="$title" -f body="$body" --jq '.data.createIssue.issue')"
-          value="$value $issue"
+          }' -f repositoryId="${REPOSITORY}" -f title="${title}" -f body="${body}" --jq '.data.createIssue.issue')"
+          value="${value} ${issue}"
           echo "::endgroup::"
-        done <<< "$(jq -c '.[]' <<< '${{ inputs.content }}')"
-        value="$(jq -sc '.' <<< "$value")"
-        echo "::set-output name=value::$value"
+        done <<< "$(jq -c '.[]' <<< "${CONTENT}")"
+        value="$(jq -sc '.' <<< "${value}")"
+        echo "::set-output name=value::${value}"
       shell: bash

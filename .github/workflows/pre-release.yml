@@ -1,5 +1,5 @@
 name: Pre Release
-on: 
+on:
   pull_request:
     paths: [CHANGELOG.md]
     branches: [master]
@@ -12,11 +12,11 @@ jobs:
       - run: |
           source .github/scripts/changelog.sh
           git fetch origin --tags
-          if [[ -z "$(git tag -l "v$version")" ]]; then
+          if [[ -z "$(git tag -l "v${version}")" ]]; then
             echo "BODY<<EOF" >> $GITHUB_ENV
             echo "$(IFS=$'\n'; echo "${log[*]}")" >> $GITHUB_ENV
             echo "EOF" >> $GITHUB_ENV
-            echo "TAG=v$version" >> $GITHUB_ENV
+            echo "TAG=v${version}" >> $GITHUB_ENV
           fi
         shell: bash
       - if: ${{ env.TAG != '' }}

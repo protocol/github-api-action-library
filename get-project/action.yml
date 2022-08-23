@@ -15,12 +15,15 @@ runs:
   using: composite
   steps:
     - id: project
+      env:
+        PROJECT: ${{ inputs.project }}
+        ORGANIZATION: ${{ inputs.organization }}
       run: |
         value=null
-        if [[ '${{ inputs.project }}' =~ ^[0-9]+$ ]]; then
+        if [[ "${PROJECT}" =~ ^[0-9]+$ ]]; then
           value="$(gh api graphql -f query='{
-            organization(login: "${{ inputs.organization }}") {
-              projectNext(number: ${{ inputs.project }}) {
+            organization(login: "'"${ORGANIZATION}"'") {
+              projectNext(number: '"${PROJECT}"') {
                 id
                 number
               }
@@ -28,8 +31,8 @@ runs:
           }' --jq '.data.organization.projectNext')"
         else
           value="$(gh api graphql -f query='{
-            organization(login: "${{ inputs.organization }}") {
-              projectsNext(first: 1, query: "${{ inputs.project }}") {
+            organization(login: "'"${ORGANIZATION}"'") {
+              projectsNext(first: 1, query: "'"${PROJECT}"'") {
                 nodes {
                   id
                   number
@@ -38,6 +41,6 @@ runs:
             }
           }' --jq '.data.organization.projectsNext.nodes[0]')"
         fi
-        value="$(jq -c '.' <<< "$value")"
-        echo "::set-output name=value::$value"
+        value="$(jq -c '.' <<< "${value}")"
+        echo "::set-output name=value::${value}"
       shell: bash

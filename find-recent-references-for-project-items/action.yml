@@ -10,7 +10,7 @@ inputs:
   max:
     description: The max limit for the number of cross references
     required: true
-    default: 1
+    default: '1'
   since:
     description: The date when the cross references where last updated
     required: false
@@ -22,27 +22,32 @@ runs:
   using: composite
   steps:
     - id: items
+      env:
+        SINCE: ${{ inputs.since }}
+        ORGANIZATION: ${{ inputs.organization }}
+        PROJECT: ${{ inputs.PROJECT }}
+        MAX: ${{ inputs.max }}
       run: |
         value=''
-        since="$(date --date='${{ inputs.since }}' +%s)"
+        since="$(date --date="${SINCE}" +%s)"
         after=null
         has_next_page=true
         while $has_next_page; do
           result="$(gh api graphql -f query='query($after: String) {
-            organization(login: "${{ inputs.organization }}") {
-              projectNext(number: ${{ inputs.project }}) {
+            organization(login: "'"${ORGANIZATION}"'") {
+              projectNext(number: '"${PROJECT}"') {
                 items(first: 100, after: $after) {
                   pageInfo {
                     hasNextPage
                     endCursor
                   }
-                  
+
                   nodes {
                     id
                     content {
                       ... on Issue {
                         timelineItems(
-                          last: ${{ inputs.max }},
+                          last: '"${MAX}"',
                           itemTypes: [CROSS_REFERENCED_EVENT]
                         ) {
                           totalCount
@@ -74,16 +79,16 @@ runs:
                 }
               }
             }
-          }' -F after="$after")"
-          has_next_page=$(jq -r '.data.organization.projectNext.items.pageInfo.hasNextPage' <<< "$result")
-          after=$(jq -r '.data.organization.projectNext.items.pageInfo.endCursor' <<< "$result")
-          for node in $(jq -rc '.data.organization.projectNext.items.nodes[] | select(.content.timelineItems.totalCount > 0)' <<< "$result"); do
-            updated_at="$(date --date="$(jq -rc '.content.timelineItems.updatedAt' <<< "$node")" +%s)"
-            if [[ '${{ inputs.since }}' == '' || "$updated_at" -ge "$since" ]]; then
-              value="$value $node"
+          }' -F after="${after}")"
+          has_next_page=$(jq -r '.data.organization.projectNext.items.pageInfo.hasNextPage' <<< "${result}")
+          after=$(jq -r '.data.organization.projectNext.items.pageInfo.endCursor' <<< "${result}")
+          for node in $(jq -rc '.data.organization.projectNext.items.nodes[] | select(.content.timelineItems.totalCount > 0)' <<< "${result}"); do
+            updated_at="$(date --date="$(jq -rc '.content.timelineItems.updatedAt' <<< "${node}")" +%s)"
+            if [[ "${SINCE}" == '' || "${updated_at}" -ge "${since}" ]]; then
+              value="${value} ${node}"
             fi
           done
         done
-        value="$(jq -sc '.' <<< "$value")"
-        echo "::set-output name=value::$value"
+        value="$(jq -sc '.' <<< "${value}")"
+        echo "::set-output name=value::${value}"
       shell: bash
