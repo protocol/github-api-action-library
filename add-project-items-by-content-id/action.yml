@@ -28,7 +28,7 @@ runs:
           echo "::group::${content_id}"
           if item_id="$(gh api graphql -f query='mutation($contentId: ID!) {
             addProjectNextItem(input: {
-              projectId: "${PROJECT_ID}",
+              projectId: "'"${PROJECT_ID}"'",
               contentId: $contentId
             }) {
               projectNextItem{
