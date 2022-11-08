@@ -1,3 +1,5 @@
+❗ The project is deprecated now. It is generally more convenient to use https://github.com/actions/github-script instead.
+
 # GitHub API Action Library
 
 This library consists of actions that call GitHub API(mainly GraphQL).
